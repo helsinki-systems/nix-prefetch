@@ -233,10 +233,10 @@ handle_common() {
     export XDG_RUNTIME_DIR
   fi
 
-  [[ -e $XDG_RUNTIME_DIR/nix-prefetch ]] && rm -r "$XDG_RUNTIME_DIR/nix-prefetch"
-  mkdir "$XDG_RUNTIME_DIR/nix-prefetch"
+  mkdir -p "$XDG_RUNTIME_DIR/nix-prefetch"
+  export TMPDIR=$(mktemp -d -p "$XDG_RUNTIME_DIR/nix-prefetch")
 
-  nixpkgs_overlays=$XDG_RUNTIME_DIR/nix-prefetch/overlays
+  nixpkgs_overlays=$TMPDIR/overlays
   if [[ -f $overlays ]]; then
     nixpkgs_overlays+=.nix
     printf '%s ++ [ (import %s) ]\n' "$(< "$overlays")" "($lib_nix/overlay.nix)" > "$nixpkgs_overlays"
@@ -528,7 +528,7 @@ args_nix="{
 printf '%s\n' "{
   fetcher = $( [[ -v fetcher ]] && printf '%s\n' "$fetcher" || echo null );
   forceHTTPS = $(nix_bool "$force_https");
-}" > "$XDG_RUNTIME_DIR/nix-prefetch/prelude-args.nix"
+}" > "$TMPDIR/prelude-args.nix"
 
 fetcher_autocomplete() {
   nix_call 'fetcherAutocomplete'
@@ -727,3 +727,5 @@ elif (( autocomplete )); then
 else
   prefetch
 fi
+
+rm -rf "$TMPDIR"
